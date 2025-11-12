@@ -39,6 +39,8 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
   const [editPassword, setEditPassword] = useState("");
   const [novoEvento, setNovoEvento] = useState({ title: "", date: "", time: "", description: "" });
   const [dialogOpen, setDialogOpen] = useState<number | null>(null);
+  const [editingEvento, setEditingEvento] = useState<typeof eventosIniciais[0] | null>(null);
+  const [showAllTreinos, setShowAllTreinos] = useState(false);
 
   const handleSaveTreino = () => {
     if (selectedTreino) {
@@ -76,13 +78,8 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
   const handleAdminEditTreino = () => {
     if (editEmail && editPassword) {
       // In production, validate credentials
-      toast.success("Acesso autorizado!");
-      // Open first training for editing
-      if (treinos.length > 0) {
-        setSelectedTreino(treinos[0]);
-      }
-      setEditEmail("");
-      setEditPassword("");
+      toast.success("Acesso autorizado! Selecione um treino para editar.");
+      setShowAllTreinos(true);
     } else {
       toast.error("Preencha e-mail e senha do aluno!");
     }
@@ -90,16 +87,37 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
 
   const handleAddEvento = () => {
     if (novoEvento.title && novoEvento.date && novoEvento.time) {
-      const newEvent = {
-        id: eventos.length + 1,
-        ...novoEvento
-      };
-      setEventos([...eventos, newEvent]);
+      if (editingEvento) {
+        setEventos(eventos.map(e => e.id === editingEvento.id ? { ...editingEvento, ...novoEvento } : e));
+        toast.success("Evento atualizado com sucesso!");
+        setEditingEvento(null);
+      } else {
+        const newEvent = {
+          id: eventos.length + 1,
+          ...novoEvento
+        };
+        setEventos([...eventos, newEvent]);
+        toast.success("Evento adicionado com sucesso!");
+      }
       setNovoEvento({ title: "", date: "", time: "", description: "" });
-      toast.success("Evento adicionado com sucesso!");
     } else {
       toast.error("Preencha todos os campos obrigatórios!");
     }
+  };
+
+  const handleEditEvento = (evento: typeof eventosIniciais[0]) => {
+    setEditingEvento(evento);
+    setNovoEvento({
+      title: evento.title,
+      date: evento.date,
+      time: evento.time,
+      description: evento.description
+    });
+  };
+
+  const handleRemoveEvento = (id: number) => {
+    setEventos(eventos.filter(e => e.id !== id));
+    toast.success("Evento removido com sucesso!");
   };
 
   return (
@@ -232,7 +250,30 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
               </CardContent>
             </Card>
 
-            {selectedTreino && (
+            {showAllTreinos && (
+              <div className="mt-4 space-y-4">
+                <h3 className="font-semibold text-lg">Selecione um treino para editar:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {treinos.map((treino) => (
+                    <Card 
+                      key={treino.id} 
+                      className="cursor-pointer hover:shadow-glow hover:border-accent transition-smooth"
+                      onClick={() => {
+                        setSelectedTreino(treino);
+                        setShowAllTreinos(false);
+                      }}
+                    >
+                      <CardContent className="p-6 text-center space-y-2">
+                        <div className="text-5xl mb-2">{treino.image}</div>
+                        <h3 className="font-semibold">{treino.title}</h3>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedTreino && !showAllTreinos && (
               <Card className="mt-4">
                 <CardContent className="p-6 space-y-4">
                   <h3 className="font-semibold text-lg">{selectedTreino.title}</h3>
@@ -247,9 +288,12 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
                       <Save className="w-4 h-4 mr-2" />
                       Salvar
                     </Button>
-                    <Button onClick={() => setSelectedTreino(null)} variant="outline" className="flex-1">
+                    <Button onClick={() => {
+                      setSelectedTreino(null);
+                      setShowAllTreinos(true);
+                    }} variant="outline" className="flex-1">
                       <X className="w-4 h-4 mr-2" />
-                      Cancelar
+                      Voltar
                     </Button>
                   </div>
                 </CardContent>
@@ -264,7 +308,12 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold">Próximos Eventos</h2>
           {userType === "admin" && (
-            <Dialog>
+            <Dialog open={!!editingEvento || undefined} onOpenChange={(open) => {
+              if (!open) {
+                setEditingEvento(null);
+                setNovoEvento({ title: "", date: "", time: "", description: "" });
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button className="bg-gradient-primary">
                   <Plus className="w-4 h-4 mr-2" />
@@ -273,7 +322,7 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Adicionar Novo Evento</DialogTitle>
+                  <DialogTitle>{editingEvento ? "Editar Evento" : "Adicionar Novo Evento"}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -312,7 +361,7 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
                   </div>
                   <Button onClick={handleAddEvento} className="w-full bg-gradient-primary">
                     <Save className="w-4 h-4 mr-2" />
-                    Adicionar Evento
+                    {editingEvento ? "Salvar Alterações" : "Adicionar Evento"}
                   </Button>
                 </div>
               </DialogContent>
@@ -320,20 +369,46 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
           )}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {eventos.map((evento) => (
-            <Card key={evento.id} className="bg-gradient-card hover:shadow-card transition-smooth">
-              <CardContent className="p-6 space-y-2">
-                <div className="flex items-center gap-2 text-accent">
-                  <Calendar className="w-5 h-5" />
-                  <span className="font-semibold">
-                    {new Date(evento.date).toLocaleDateString('pt-BR')} às {evento.time}
-                  </span>
-                </div>
-                <h3 className="font-bold text-lg">{evento.title}</h3>
-                <p className="text-muted-foreground text-sm">{evento.description}</p>
-              </CardContent>
-            </Card>
-          ))}
+          {eventos.map((evento) => {
+            const [year, month, day] = evento.date.split('-').map(Number);
+            const dateStr = `${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+            
+            return (
+              <Card key={evento.id} className="bg-gradient-card hover:shadow-card transition-smooth relative group">
+                <CardContent className="p-6 space-y-2">
+                  <div className="flex items-center gap-2 text-accent">
+                    <Calendar className="w-5 h-5" />
+                    <span className="font-semibold">
+                      {dateStr} às {evento.time}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-lg">{evento.title}</h3>
+                  <p className="text-muted-foreground text-sm">{evento.description}</p>
+                  
+                  {userType === "admin" && (
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => handleEditEvento(evento)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        onClick={() => handleRemoveEvento(evento.id)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </section>
     </div>

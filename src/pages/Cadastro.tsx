@@ -30,6 +30,9 @@ export default function Cadastro() {
     }
 
     // In production, this would register the user
+    // Store user data for login
+    localStorage.setItem(`userName_${formData.email}`, formData.name);
+    localStorage.setItem(`userPhone_${formData.email}`, formData.phone);
     toast.success("Cadastro realizado com sucesso!");
     navigate("/login");
   };

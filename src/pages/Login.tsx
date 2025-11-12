@@ -36,8 +36,10 @@ export default function Login() {
     } else {
       // User login (simplified - would use real auth in production)
       if (email && password) {
+        const storedName = localStorage.getItem(`userName_${email}`);
         localStorage.setItem("userType", "user");
         localStorage.setItem("userEmail", email);
+        localStorage.setItem("userName", storedName || "Usuário");
         toast.success("Login realizado com sucesso!");
         navigate("/dashboard");
       } else {
