@@ -24,6 +24,16 @@ const eventosIniciais = [
   { id: 3, title: "Yoga ao Entardecer", date: "2025-11-10", time: "17:30", description: "Relaxamento e alongamento" },
 ];
 
+const emojiOptions = [
+  { emoji: "💪", label: "Braço" },
+  { emoji: "🦵", label: "Perna" },
+  { emoji: "🫀", label: "Peito" },
+  { emoji: "🏋️", label: "Costas" },
+  { emoji: "🏃", label: "Corrida" },
+  { emoji: "👟", label: "Tênis" },
+  { emoji: "💪", label: "Ombro" },
+];
+
 const treinosIniciais = [
   { id: 1, title: "Treino A - Peito/Tríceps", image: "💪", notes: "Supino reto 3x12\nSupino inclinado 3x10\nCrucifixo 3x12\nTríceps testa 3x12" },
   { id: 2, title: "Treino B - Costas/Bíceps", image: "🏋️", notes: "Barra fixa 3x10\nRemada curvada 3x12\nPuxada alta 3x12\nRosca direta 3x12" },
@@ -187,14 +197,46 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>{treino.title}</DialogTitle>
+
+
+                       <DialogTitle>Editar Treino</DialogTitle>
                       </DialogHeader>
-                      <Textarea
-                        value={selectedTreino?.notes || ""}
-                        onChange={(e) => setSelectedTreino(selectedTreino ? { ...selectedTreino, notes: e.target.value } : null)}
-                        rows={10}
-                        className="font-mono"
-                      />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Título do Treino</Label>
+                          <Input
+                            value={selectedTreino?.title || ""}
+                            onChange={(e) => setSelectedTreino(selectedTreino ? { ...selectedTreino, title: e.target.value } : null)}
+                            placeholder="Nome do treino"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Imagem do Treino</Label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {emojiOptions.map((option) => (
+                              <Button
+                                key={option.label}
+                                type="button"
+                                variant={selectedTreino?.image === option.emoji ? "default" : "outline"}
+                                className="h-16 text-3xl"
+                                onClick={() => setSelectedTreino(selectedTreino ? { ...selectedTreino, image: option.emoji } : null)}
+                              >
+                                {option.emoji}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Exercícios</Label>
+                          <Textarea
+                            value={selectedTreino?.notes || ""}
+                            onChange={(e) => setSelectedTreino(selectedTreino ? { ...selectedTreino, notes: e.target.value } : null)}
+                            rows={10}
+                            className="font-mono"
+                          />
+                        </div>
+                      </div>
+                      
                       <div className="flex gap-2">
                         <Button onClick={handleSaveTreino} className="flex-1 bg-gradient-primary">
                           <Save className="w-4 h-4 mr-2" />
@@ -276,13 +318,43 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
             {selectedTreino && !showAllTreinos && (
               <Card className="mt-4">
                 <CardContent className="p-6 space-y-4">
-                  <h3 className="font-semibold text-lg">{selectedTreino.title}</h3>
-                  <Textarea
-                    value={selectedTreino.notes}
-                    onChange={(e) => setSelectedTreino({ ...selectedTreino, notes: e.target.value })}
-                    rows={10}
-                    className="font-mono"
-                  />
+
+
+                 <div className="space-y-2">
+                    <Label>Título do Treino</Label>
+                    <Input
+                      value={selectedTreino.title}
+                      onChange={(e) => setSelectedTreino({ ...selectedTreino, title: e.target.value })}
+                      placeholder="Nome do treino"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Imagem do Treino</Label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {emojiOptions.map((option) => (
+                        <Button
+                          key={option.label}
+                          type="button"
+                          variant={selectedTreino.image === option.emoji ? "default" : "outline"}
+                          className="h-16 text-3xl"
+                          onClick={() => setSelectedTreino({ ...selectedTreino, image: option.emoji })}
+                        >
+                          {option.emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Exercícios</Label>
+                    <Textarea
+                      value={selectedTreino.notes}
+                      onChange={(e) => setSelectedTreino({ ...selectedTreino, notes: e.target.value })}
+                      rows={10}
+                      className="font-mono"
+                    />
+                  </div>
+
+
                   <div className="flex gap-2">
                     <Button onClick={handleSaveTreino} className="flex-1 bg-gradient-primary">
                       <Save className="w-4 h-4 mr-2" />
