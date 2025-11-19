@@ -1,21 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, Edit, Plus, Save, X } from "lucide-react";
+import { Calendar, Edit, Plus, Save, X, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface InicioTabProps {
   userType: "user" | "admin";
 }
 
-const patrocinadores = [
+interface Patrocinador {
+  id: number;
+  name: string;
+  url: string;
+  emoji?: string;
+  image?: string;
+}
+
+const patrocinadoresIniciais: Patrocinador[] = [
   { id: 1, name: "Nike", url: "https://www.nike.com.br", emoji: "👟" },
   { id: 2, name: "Adidas", url: "https://www.adidas.com.br", emoji: "⚽" },
   { id: 3, name: "Puma", url: "https://br.puma.com", emoji: "🐆" },
+  { id: 4, name: "New Balance", url: "https://www.newbalance.com.br", emoji: "🏃" },
 ];
 
 const eventosIniciais = [
@@ -51,6 +60,22 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
   const [dialogOpen, setDialogOpen] = useState<number | null>(null);
   const [editingEvento, setEditingEvento] = useState<typeof eventosIniciais[0] | null>(null);
   const [showAllTreinos, setShowAllTreinos] = useState(false);
+   const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>(patrocinadoresIniciais);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
+  const [novoPatrocinador, setNovoPatrocinador] = useState<Patrocinador>({ 
+    id: 0, 
+    name: "", 
+    url: "", 
+    emoji: "🏆" 
+  });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % Math.max(1, patrocinadores.length - 2));
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [patrocinadores.length]);
 
   const handleSaveTreino = () => {
     if (selectedTreino) {
@@ -130,27 +155,149 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
     toast.success("Evento removido com sucesso!");
   };
 
+const handleAddPatrocinador = () => {
+    if (!novoPatrocinador.name || !novoPatrocinador.url) {
+      toast.error("Preencha nome e URL do patrocinador!");
+      return;
+    }
+    const newSponsor = {
+      ...novoPatrocinador,
+      id: patrocinadores.length + 1,
+    };
+    setPatrocinadores([...patrocinadores, newSponsor]);
+    setNovoPatrocinador({ id: 0, name: "", url: "", emoji: "🏆" });
+    setSponsorDialogOpen(false);
+    toast.success("Patrocinador adicionado!");
+  };
+
+  const handleRemovePatrocinador = (id: number) => {
+    setPatrocinadores(patrocinadores.filter(p => p.id !== id));
+    toast.success("Patrocinador removido!");
+  };
+
+  const handleSponsorImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNovoPatrocinador({ ...novoPatrocinador, image: reader.result as string, emoji: undefined });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const visibleSponsors = patrocinadores.slice(carouselIndex, carouselIndex + 3);
+
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
       {/* Patrocinadores */}
       <section>
-        <h2 className="text-2xl font-bold mb-4">Patrocinadores</h2>
+
+
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Patrocinadores</h2>
+          {userType === "admin" && (
+            <Dialog open={sponsorDialogOpen} onOpenChange={setSponsorDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Patrocinador
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Adicionar Patrocinador</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="sponsor-name">Nome</Label>
+                    <Input
+                      id="sponsor-name"
+                      value={novoPatrocinador.name}
+                      onChange={(e) => setNovoPatrocinador({ ...novoPatrocinador, name: e.target.value })}
+                      placeholder="Nome do patrocinador"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sponsor-url">URL</Label>
+                    <Input
+                      id="sponsor-url"
+                      value={novoPatrocinador.url}
+                      onChange={(e) => setNovoPatrocinador({ ...novoPatrocinador, url: e.target.value })}
+                      placeholder="https://exemplo.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sponsor-image">Imagem (opcional)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="sponsor-image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleSponsorImageUpload}
+                      />
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setNovoPatrocinador({ ...novoPatrocinador, image: undefined, emoji: "🏆" })}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {novoPatrocinador.image && (
+                      <img src={novoPatrocinador.image} alt="Preview" className="mt-2 h-20 w-20 object-contain" />
+                    )}
+                  </div>
+                  <div>
+                    <Label>Emoji (se não usar imagem)</Label>
+                    <Input
+                      value={novoPatrocinador.emoji || ""}
+                      onChange={(e) => setNovoPatrocinador({ ...novoPatrocinador, emoji: e.target.value })}
+                      placeholder="🏆"
+                      maxLength={2}
+                    />
+                  </div>
+                  <Button onClick={handleAddPatrocinador} className="w-full bg-gradient-primary">
+                    Adicionar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {patrocinadores.map((sponsor) => (
-            <a 
-              key={sponsor.id} 
-              href={sponsor.url} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block"
-            >
-              <Card className="bg-gradient-card hover:shadow-glow transition-smooth cursor-pointer">
-                <CardContent className="flex flex-col items-center justify-center h-32 gap-2">
-                  <span className="text-5xl">{sponsor.emoji}</span>
-                  <span className="font-semibold">{sponsor.name}</span>
-                </CardContent>
-              </Card>
-            </a>
+          {visibleSponsors.map((sponsor) => (
+            <div key={sponsor.id} className="relative group">
+              <a 
+                href={sponsor.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Card className="bg-gradient-card hover:shadow-glow transition-smooth cursor-pointer">
+                  <CardContent className="flex flex-col items-center justify-center h-32 gap-2">
+                    {sponsor.image ? (
+                      <img src={sponsor.image} alt={sponsor.name} className="h-16 w-16 object-contain" />
+                    ) : (
+                      <span className="text-5xl">{sponsor.emoji}</span>
+                    )}
+                    <span className="font-semibold">{sponsor.name}</span>
+                  </CardContent>
+                </Card>
+              </a>
+              {userType === "admin" && (
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => handleRemovePatrocinador(sponsor.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+
+
           ))}
         </div>
       </section>
@@ -457,6 +604,23 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
                   <h3 className="font-bold text-lg">{evento.title}</h3>
                   <p className="text-muted-foreground text-sm">{evento.description}</p>
                   
+                  {userType === "user" && (
+                        <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                          <Button 
+                            variant="outline"
+                            className="flex-1 border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
+                          >
+                            ✅ Vou
+                          </Button>
+                          <Button 
+                            variant="outline"
+                            className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                          >
+                            ❌ Não vou
+                          </Button>
+                    </div>
+                  )}
+
                   {userType === "admin" && (
                     <div className="flex gap-2 mt-4 pt-4 border-t border-border">
                       <Button 
