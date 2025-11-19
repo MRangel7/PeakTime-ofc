@@ -14,9 +14,9 @@ export default function Login() {
   const [adminName, setAdminName] = useState("");
   const [adminCode, setAdminCode] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isAdmin) {
       // Admin login validation
       if (
@@ -35,21 +35,39 @@ export default function Login() {
       }
     } else {
       // User login (simplified - would use real auth in production)
-      if (email && password) {
-        const storedName = localStorage.getItem(`userName_${email}`);
+      // LOGIN DE USUÁRIO NORMAL
+      try {
+        const response = await fetch("http://localhost:5000/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          toast.error(data.error || "Erro ao fazer login");
+          return;
+        }
+
+        // Guarda uns dados básicos
         localStorage.setItem("userType", "user");
-        localStorage.setItem("userEmail", email);
-        localStorage.setItem("userName", storedName || "Usuário");
+        localStorage.setItem("userEmail", data.user.email);
+        localStorage.setItem("userName", data.user.name);
+        localStorage.setItem("userPhone", data.user.phone);
+
         toast.success("Login realizado com sucesso!");
         navigate("/dashboard");
-      } else {
-        toast.error("Por favor, preencha todos os campos!");
+      } catch (error) {
+        toast.error("Erro ao conectar ao servidor");
       }
     }
   };
 
   return (
-    <AuthLayout 
+    <AuthLayout
       title="PeakTime"
       subtitle={isAdmin ? "Acesso Administrativo" : "Bem-vindo de volta"}
     >
@@ -80,7 +98,7 @@ export default function Login() {
             </div>
           </>
         )}
-        
+
         <div className="space-y-2">
           <Label htmlFor="email">E-mail</Label>
           <Input
@@ -92,7 +110,7 @@ export default function Login() {
             required
           />
         </div>
-        
+
         <div className="space-y-2">
           <Label htmlFor="password">Senha</Label>
           <Input
@@ -105,8 +123,8 @@ export default function Login() {
           />
         </div>
 
-        <Button 
-          type="submit" 
+        <Button
+          type="submit"
           className="w-full bg-gradient-primary hover:opacity-90 transition-smooth"
         >
           Entrar
@@ -121,7 +139,7 @@ export default function Login() {
           >
             {isAdmin ? "Entrar como Usuário" : "Entrar como ADM"}
           </Button>
-          
+
           <Button
             type="button"
             variant="ghost"

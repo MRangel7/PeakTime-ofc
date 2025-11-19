@@ -45,7 +45,7 @@ export const PerfilTab = ({ userType }: PerfilTabProps) => {
 
   const userName = localStorage.getItem("userName") || "Usuário";
   const userEmail = localStorage.getItem("userEmail") || "usuario@email.com";
-  const userPhone = localStorage.getItem(`userPhone_${userEmail}`) || "(00) 0 0000-0000";
+  const userPhone = localStorage.getItem("userPhone") || "(00) 0 0000-0000";
 
   const handleLogout = () => {
     localStorage.removeItem("userType");
