@@ -16,26 +16,47 @@ export default function Cadastro() {
     confirmPassword: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error("As senhas não coincidem!");
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (formData.password !== formData.confirmPassword) {
+    toast.error("As senhas não coincidem!");
+    return;
+  }
+
+  if (formData.password.length < 6) {
+    toast.error("A senha deve ter no mínimo 6 caracteres!");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      toast.error(data.error || "Erro ao cadastrar");
       return;
     }
 
-    if (formData.password.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres!");
-      return;
-    }
-
-    // In production, this would register the user
-    // Store user data for login
-    localStorage.setItem(`userName_${formData.email}`, formData.name);
-    localStorage.setItem(`userPhone_${formData.email}`, formData.phone);
     toast.success("Cadastro realizado com sucesso!");
     navigate("/login");
-  };
+
+  } catch (error) {
+    toast.error("Erro ao conectar com o servidor");
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
