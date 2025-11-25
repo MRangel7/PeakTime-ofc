@@ -40,7 +40,6 @@ const emojiOptions = [
   { emoji: "🏋️", label: "Costas" },
   { emoji: "🏃", label: "Corrida" },
   { emoji: "👟", label: "Tênis" },
-  { emoji: "💪", label: "Ombro" },
 ];
 
 const treinosIniciais = [
@@ -72,7 +71,7 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % Math.max(1, patrocinadores.length - 2));
+      setCarouselIndex((prev) => (prev + 1) % patrocinadores.length);
     }, 6000);
     return () => clearInterval(interval);
   }, [patrocinadores.length]);
@@ -186,8 +185,10 @@ const handleAddPatrocinador = () => {
     }
   };
 
-  const visibleSponsors = patrocinadores.slice(carouselIndex, carouselIndex + 3);
-
+  const visibleSponsors = Array.from({ length: 3 }, (_, i) => 
+    patrocinadores[(carouselIndex + i) % patrocinadores.length]
+  );
+  
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
       {/* Patrocinadores */}
