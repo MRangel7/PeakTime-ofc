@@ -1,41 +1,46 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from "recharts";
 import { TrendingUp, Users, Clock } from "lucide-react";
+import { useEffect, useState } from "react";
 
 // Dados simulados de fluxo de pessoas na academia
-const fluxoData = [
-  { hora: "06:00", pessoas: 12 },
-  { hora: "07:00", pessoas: 28 },
-  { hora: "08:00", pessoas: 45 },
-  { hora: "09:00", pessoas: 38 },
-  { hora: "10:00", pessoas: 25 },
-  { hora: "11:00", pessoas: 18 },
-  { hora: "12:00", pessoas: 22 },
-  { hora: "13:00", pessoas: 15 },
-  { hora: "14:00", pessoas: 20 },
-  { hora: "15:00", pessoas: 28 },
-  { hora: "16:00", pessoas: 35 },
-  { hora: "17:00", pessoas: 52 },
-  { hora: "18:00", pessoas: 68 },
-  { hora: "19:00", pessoas: 75 },
-  { hora: "20:00", pessoas: 62 },
-  { hora: "21:00", pessoas: 42 },
-  { hora: "22:00", pessoas: 28 },
-];
-
-// Projeção para as próximas horas
-const projecaoData = [
-  { hora: "Agora", pessoas: 45 },
-  { hora: "+1h", pessoas: 52 },
-  { hora: "+2h", pessoas: 68 },
-  { hora: "+3h", pessoas: 75 },
-  { hora: "+4h", pessoas: 62 },
-];
 
 export const PeakTimeTab = () => {
-  const pessoasAtuais = 45;
+  const [fluxoData, setFluxoData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("http://127.0.0.1:5000/counts")
+      .then((res) => res.json())
+      .then((data) => setFluxoData(data))
+      .catch((error) => console.error("Erro ao carregar dados:", error));
+  }, []);
+
+  const projecaoData = fluxoData.slice(-5).map((item, index) => ({
+    hora: index === 0 ? "Agora" : `+${index}h`,
+    pessoas: item.pessoas,
+  }));
+
+  const pessoasAtuais = fluxoData.length
+    ? fluxoData[fluxoData.length - 1].pessoas
+    : 0;
+
   const capacidadeMaxima = 100;
   const percentualOcupacao = (pessoasAtuais / capacidadeMaxima) * 100;
+
+  const pico = fluxoData.reduce(
+    (max, item) => (item.pessoas > max.pessoas ? item : max),
+    fluxoData[0] || {}
+  );
 
   return (
     <div className="container mx-auto py-8 px-4 space-y-8">
@@ -45,7 +50,9 @@ export const PeakTimeTab = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted-foreground text-sm mb-1">Pessoas Agora</p>
+                <p className="text-muted-foreground text-sm mb-1">
+                  Pessoas Agora
+                </p>
                 <p className="text-4xl font-bold">{pessoasAtuais}</p>
               </div>
               <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
@@ -60,7 +67,9 @@ export const PeakTimeTab = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-muted-foreground text-sm mb-1">Ocupação</p>
-                <p className="text-4xl font-bold">{percentualOcupacao.toFixed(0)}%</p>
+                <p className="text-4xl font-bold">
+                  {percentualOcupacao.toFixed(0)}%
+                </p>
               </div>
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <TrendingUp className="w-8 h-8 text-primary" />
@@ -73,8 +82,10 @@ export const PeakTimeTab = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-muted-foreground text-sm mb-1">Pico do Dia</p>
-                <p className="text-4xl font-bold">19:00</p>
+                <p className="text-muted-foreground text-sm mb-1">
+                  Pico do Dia
+                </p>
+                <p className="text-4xl font-bold">{pico?.hora || "--:--"}</p>
               </div>
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
                 <Clock className="w-8 h-8 text-destructive" />
@@ -97,26 +108,34 @@ export const PeakTimeTab = () => {
             <AreaChart data={fluxoData}>
               <defs>
                 <linearGradient id="colorPessoas" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(210 100% 50%)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="hsl(210 100% 50%)" stopOpacity={0}/>
+                  <stop
+                    offset="5%"
+                    stopColor="hsl(210 100% 50%)"
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="hsl(210 100% 50%)"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
               <XAxis dataKey="hora" />
               <YAxis />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
                 }}
               />
-              <Area 
-                type="monotone" 
-                dataKey="pessoas" 
-                stroke="hsl(210 100% 50%)" 
+              <Area
+                type="monotone"
+                dataKey="pessoas"
+                stroke="hsl(210 100% 50%)"
                 strokeWidth={2}
-                fill="url(#colorPessoas)" 
+                fill="url(#colorPessoas)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -137,19 +156,19 @@ export const PeakTimeTab = () => {
               <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
               <XAxis dataKey="hora" />
               <YAxis />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px'
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
                 }}
               />
-              <Line 
-                type="monotone" 
-                dataKey="pessoas" 
-                stroke="hsl(210 100% 50%)" 
+              <Line
+                type="monotone"
+                dataKey="pessoas"
+                stroke="hsl(210 100% 50%)"
                 strokeWidth={3}
-                dot={{ fill: 'hsl(210 100% 50%)', r: 6 }}
+                dot={{ fill: "hsl(210 100% 50%)", r: 6 }}
                 strokeDasharray="5 5"
               />
             </LineChart>
@@ -164,8 +183,9 @@ export const PeakTimeTab = () => {
       <Card className="bg-muted/50 border-dashed">
         <CardContent className="p-6">
           <p className="text-sm text-muted-foreground text-center">
-            📊 Os dados exibidos são simulados. Para conectar ao banco de dados real, 
-            configure a URL do banco SQL no código-fonte (arquivo: banco_academia_ficticio.sql)
+            📊 Os dados exibidos são simulados. Para conectar ao banco de dados
+            real, configure a URL do banco SQL no código-fonte (arquivo:
+            banco_academia_ficticio.sql)
           </p>
         </CardContent>
       </Card>
