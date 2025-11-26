@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
-import random
 
 app = Flask(__name__)
 CORS(app)
@@ -13,6 +12,8 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+# ================== MODELS ==================
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
@@ -20,8 +21,30 @@ class User(db.Model):
     phone = db.Column(db.String(30), nullable=False)
     password = db.Column(db.String(150), nullable=False)
 
+
+class CurrentPeople(db.Model):
+    __tablename__ = "current_people"
+    id = db.Column(db.Integer, primary_key=True)
+    total = db.Column(db.Integer, nullable=False, default=0)
+
+
+class PeopleCount(db.Model):
+    __tablename__ = "people_count"
+    id = db.Column(db.Integer, primary_key=True)
+    hour = db.Column(db.String(5), nullable=False)
+    total_people = db.Column(db.Integer, nullable=False)
+
+
+# ================== INIT DB ==================
+
 with app.app_context():
     db.create_all()
+    if not CurrentPeople.query.first():
+        db.session.add(CurrentPeople(total=0))
+        db.session.commit()
+
+
+# ================== AUTH ==================
 
 @app.post("/register")
 def register():
@@ -30,27 +53,18 @@ def register():
     name = data.get("name")
     email = data.get("email")
     phone = data.get("phone")
-    password = data.get("password")  
+    password = data.get("password")
 
-
-    existing_user = User.query.filter_by(email=email).first()
-    existing_phone = User.query.filter_by(phone=phone).first()
-    if existing_user:
+    if User.query.filter_by(email=email).first():
         return jsonify({"error": "Email já cadastrado"}), 400
-    elif existing_phone:
+    if User.query.filter_by(phone=phone).first():
         return jsonify({"error": "Telefone já cadastrado"}), 400
-    
-    new_user = User(
-        name=name,
-        email=email,
-        phone=phone,
-        password=password,
-    )
 
+    new_user = User(name=name, email=email, phone=phone, password=password)
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "Usuário cadastrado com sucesso"}), 201 
+    return jsonify({"message": "Usuário cadastrado com sucesso"}), 201
 
 
 @app.post("/login")
@@ -64,10 +78,8 @@ def login():
 
     if not user:
         return jsonify({"error": "Usuário não encontrado"}), 404
-
     if user.password != password:
         return jsonify({"error": "Senha incorreta"}), 401
-
 
     return jsonify({
         "message": "Login realizado com sucesso",
@@ -78,16 +90,33 @@ def login():
         }
     })
 
-# Tabela contendo quantidade de pessoas por horário
-class PeopleCount(db.Model):
-    __tablename__ = "people_count"
 
-    id = db.Column(db.Integer, primary_key=True)
-    hour = db.Column(db.String(5), nullable=False)  
-    total_people = db.Column(db.Integer, nullable=False)
+# ================== CONTADOR ATUAL ==================
 
-with app.app_context():
-    db.create_all()
+@app.post("/incrementar")
+def incrementar():
+    contador = CurrentPeople.query.first()
+    contador.total += 1
+    db.session.commit()
+    return jsonify({"total": contador.total})
+
+
+@app.post("/decrementar")
+def decrementar():
+    contador = CurrentPeople.query.first()
+    if contador.total > 0:
+        contador.total -= 1
+        db.session.commit()
+    return jsonify({"total": contador.total})
+
+
+@app.get("/contador-atual")
+def contador_atual():
+    contador = CurrentPeople.query.first()
+    return jsonify({"total": contador.total})
+
+
+# ================== PEOPLE COUNT ==================
 
 @app.post("/count")
 def save_people_count():
@@ -96,55 +125,54 @@ def save_people_count():
     hour = data.get("hour")
     total = data.get("total")
 
-    new_count = PeopleCount(
-        hour=hour,
-        total_people=total
-    )
-
+    new_count = PeopleCount(hour=hour, total_people=total)
     db.session.add(new_count)
     db.session.commit()
 
     return jsonify({"message": "Registro salvo com sucesso"}), 201
+
 
 @app.get("/counts")
 def get_counts():
     counts = PeopleCount.query.all()
 
     result = [
-        {
-            "hora": c.hour,
-            "pessoas": c.total_people
-        } for c in counts
+        {"hora": c.hour, "pessoas": c.total_people}
+        for c in counts
     ]
 
     return jsonify(result)
 
 
+# ================== AUTO UPDATE ==================
 
 def automatic_hourly_count():
     with app.app_context():
-        now = datetime.now()
-        hour = now.strftime("%H:00")
+        hour = datetime.now().strftime("%H:%M")  # formato 14:32
 
-        total_people = random.randint(0, 100)
+        contador = CurrentPeople.query.first()
+        total_people = contador.total
 
-        new_count = PeopleCount(
-        hour=hour,
-        total_people=total_people
-        )
+        registro_existente = PeopleCount.query.filter_by(hour=hour).first()
 
-        db.session.add(new_count)
+        if registro_existente:
+            registro_existente.total_people = total_people
+        else:
+            novo = PeopleCount(
+                hour=hour,
+                total_people=total_people
+            )
+            db.session.add(novo)
+
         db.session.commit()
+        print(f"[AUTO] Atualizado: {total_people} pessoas às {hour}")
 
-        print(f"[AUTO] Inserido: {total_people} pessoas às {hour}")
+
+# ================== MAIN ==================
 
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
-    scheduler.add_job(automatic_hourly_count, 'interval', hours=1)
-
-    # Modo de teste: coloquem pra gerar a cada 10 ou 15s se quiserem ver funcionando, basicamente troca o hours=1 por seconds=10
-    # scheduler.add_job(automatic_hourly_count, 'interval', seconds=15)
-
+    scheduler.add_job(automatic_hourly_count, 'interval', seconds=10)
     scheduler.start()
 
     app.run(debug=True)

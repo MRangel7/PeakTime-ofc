@@ -183,9 +183,7 @@ export const PeakTimeTab = () => {
       <Card className="bg-muted/50 border-dashed">
         <CardContent className="p-6">
           <p className="text-sm text-muted-foreground text-center">
-            📊 Os dados exibidos são simulados. Para conectar ao banco de dados
-            real, configure a URL do banco SQL no código-fonte (arquivo:
-            banco_academia_ficticio.sql)
+            📊 Os dados exibidos são simulados para teste.
           </p>
         </CardContent>
       </Card>

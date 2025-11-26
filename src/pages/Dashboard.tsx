@@ -5,6 +5,7 @@ import { Home, TrendingUp, User } from "lucide-react";
 import { InicioTab } from "@/components/tabs/InicioTab";
 import { PeakTimeTab } from "@/components/tabs/PeakTimeTab";
 import { PerfilTab } from "@/components/tabs/PerfilTab";
+import PeopleCounter from "@/components/tabs/peoplecounter";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -41,9 +42,13 @@ export default function Dashboard() {
           <InicioTab userType={userType} />
         </TabsContent>
 
-        <TabsContent value="peaktime" className="m-0">
-          <PeakTimeTab />
-        </TabsContent>
+<TabsContent value="peaktime" className="m-0">
+  <div className="p-6">
+    <PeakTimeTab />
+    <PeopleCounter isAdmin={userType === "admin"} />
+  </div>
+</TabsContent>
+
 
         <TabsContent value="perfil" className="m-0">
           <PerfilTab userType={userType} />
