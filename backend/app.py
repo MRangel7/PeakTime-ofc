@@ -122,27 +122,29 @@ def get_counts():
 
 
 def automatic_hourly_count():
-    now = datetime.now()
-    hour = now.strftime("%H:00")
+    with app.app_context():
+        now = datetime.now()
+        hour = now.strftime("%H:00")
 
-    
-    total_people = random.randint(0, 100)  
+        total_people = random.randint(0, 100)
 
-    new_count = PeopleCount(
+        new_count = PeopleCount(
         hour=hour,
         total_people=total_people
-    )
+        )
 
-    with app.app_context():
         db.session.add(new_count)
         db.session.commit()
 
-scheduler = BackgroundScheduler()
-scheduler.add_job(automatic_hourly_count, 'interval', hours=1)
-scheduler.start()
-
+        print(f"[AUTO] Inserido: {total_people} pessoas às {hour}")
 
 if __name__ == "__main__":
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(automatic_hourly_count, 'interval', hours=1)
+
+    # Modo de teste: coloquem pra gerar a cada 10 ou 15s se quiserem ver funcionando, basicamente troca o hours=1 por seconds=10
+    # scheduler.add_job(automatic_hourly_count, 'interval', seconds=15)
+
+    scheduler.start()
+
     app.run(debug=True)
-
-
