@@ -29,15 +29,54 @@ export default function PeopleCounter({ isAdmin }) {
   };
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <h2>Pessoas presentes: {total}</h2>
+  <div style={{ textAlign: "center" }}>
+    {isAdmin && (
+      <>
+        <h2>Pessoas presentes: {total}</h2>
 
-      {isAdmin && (
-        <div style={{ marginTop: "10px" }}>
-          <button onClick={decrementar}>-</button>
-          <button onClick={incrementar}>+</button>
-        </div>
-      )}
-    </div>
-  );
+        <div style={{ display: "flex", gap: "15px", justifyContent: "center" }}>
+  
+  <button
+    onClick={incrementar}
+    style={{
+      backgroundColor: "#0f0f0f",
+      color: "#00ff99",
+      border: "2px solid #00ff99",
+      padding: "12px 22px",
+      borderRadius: "12px",
+      fontSize: "18px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px"
+    }}
+  >
+    +1 pessoa
+  </button>
+
+  <button
+    onClick={decrementar}
+    style={{
+      backgroundColor: "#0f0f0f",
+      color: "#ff4d4d",
+      border: "2px solid #ff4d4d",
+      padding: "12px 22px",
+      borderRadius: "12px",
+      fontSize: "18px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px"
+    }}
+  >
+    -1 pessoa
+  </button>
+
+</div>
+
+      </>
+    )}
+  </div>
+);
+
 }

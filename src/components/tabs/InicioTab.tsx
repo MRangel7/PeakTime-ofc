@@ -62,6 +62,7 @@ export const InicioTab = ({ userType }: InicioTabProps) => {
    const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>(patrocinadoresIniciais);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [sponsorDialogOpen, setSponsorDialogOpen] = useState(false);
+  const [eventoStatus, setEventoStatus] = useState<{ [key: number]: "vou" | "nao" | null }>({});
   const [novoPatrocinador, setNovoPatrocinador] = useState<Patrocinador>({ 
     id: 0, 
     name: "", 
@@ -607,19 +608,49 @@ const handleAddPatrocinador = () => {
                   
                   {userType === "user" && (
                         <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                          <Button 
-                            variant="outline"
-                            className="flex-1 border-green-500 text-green-500 hover:bg-green-500 hover:text-white"
-                          >
-                            ✅ Vou
-                          </Button>
-                          <Button 
-                            variant="outline"
-                            className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                          >
-                            ❌ Não vou
-                          </Button>
-                    </div>
+
+  {/* BOTÃO VOU */}
+  <Button
+    variant="outline"
+    className={`flex-1 border-green-500 
+      ${eventoStatus[evento.id] === "vou"
+        ? "bg-green-500 text-white"
+        : "text-green-500 hover:bg-green-500 hover:text-white"}
+    `}
+    onClick={() =>
+      setEventoStatus(prev => ({
+        ...prev,
+        [evento.id]:
+          prev[evento.id] === "vou" ? null : "vou"   // 👈 AQUI REMOVE SE CLICAR DE NOVO
+      }))
+    }
+  >
+    Vou
+  </Button>
+
+  {/* BOTÃO NÃO VOU */}
+  <Button
+    variant="outline"
+    className={`flex-1 border-red-500 
+      ${eventoStatus[evento.id] === "nao"
+        ? "bg-red-500 text-white"
+        : "text-red-500 hover:bg-red-500 hover:text-white"}
+    `}
+    onClick={() =>
+      setEventoStatus(prev => ({
+        ...prev,
+        [evento.id]:
+          prev[evento.id] === "nao" ? null : "nao"   // 👈 AQUI TAMBÉM REMOVE SE CLICAR DE NOVO
+      }))
+    }
+  >
+    Não vou
+  </Button>
+  
+</div>
+
+
+
                   )}
 
                   {userType === "admin" && (
