@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
+from flask import Flask, request, jsonify
+from datetime import datetime, time, timedelta
 
 app = Flask(__name__)
 CORS(app)
@@ -167,6 +169,112 @@ def automatic_hourly_count():
         db.session.commit()
         print(f"[AUTO] Atualizado: {total_people} pessoas às {hour}")
 
+
+@app.post("/prever_lotacao")
+def prever_lotacao():
+    data = request.json
+    ultimas5 = data.get("ultimas5", [])
+    hora = data.get("hora")    # opcional: hora atual (int)
+    minuto = data.get("minuto")  # opcional: minuto atual (int)
+
+    # valida e converte
+    try:
+        ultimas = [float(x) for x in ultimas5]
+    except Exception:
+        return jsonify({"erro": "últimos valores inválidos"}), 400
+
+    if len(ultimas) == 0:
+        return jsonify({"erro": "Forneça pelo menos 1 registro"}), 400
+
+    # se cliente enviar hora/minuto usa, senão usa datetime.now()
+    now = datetime.now()
+    if isinstance(hora, int) and isinstance(minuto, int):
+        now = now.replace(hour=hora % 24, minute=minuto % 60, second=0, microsecond=0)
+    else:
+        now = now.replace(second=0, microsecond=0)
+
+    # mapeamento de regras (intervalos [start, end) em horário)
+    # cada valor é o ajuste a ser somado (positivo/negativo)
+    rules = [
+        (time(6, 0),  time(14, 0),  +5),
+        (time(14, 0), time(18, 0),  -4),
+        (time(18, 0), time(18,45),  +2),
+        (time(18,45), time(19,15),  +4),
+        (time(19,15), time(19,45),  +5),
+        (time(19,45), time(20,15),  +7),
+        (time(20,15), time(20,45),  -2),
+        (time(20,45), time(21,15),  +0),
+        (time(21,15), time(21,45),  +1),
+        (time(21,45), time(22,15),  +7),
+        (time(22,15), time(22,45),  -5),
+        (time(22,45), time(23,15),  -6),
+        (time(23,15), time(23,45),  +5),
+        (time(23,45), time(23,59,59), -11),  # tratativa até 23:59:59
+        (time(0,0),   time(6,0),   -11),      # 00:00 - 06:00 também -11
+    ]
+
+    def ajuste_para(h: time):
+        # retorna ajuste com base nas regras para o horário h (time)
+        for start, end, adj in rules:
+            # lidar com intervalos normais
+            if start <= h < end:
+                return adj
+        # se não encontrou (por segurança) devolve 0
+        return 0
+
+    # Função auxiliar média (usa todos os elementos passados)
+    def media(arr):
+        if len(arr) == 0:
+            return 0
+        return sum(arr) / len(arr)
+
+    # ITERAÇÃO para 5 previsões seguindo sua regra:
+    offsets = [15, 30, 60, 90, 120]  # minutos para as 5 previsões
+    preds = []
+    prev_preds = []
+    # Garantir que ultimas estão ordenadas do mais antigo para o mais recente
+    # O front envia geralmente últimos registros em ordem correta; assumimos que sim.
+    # Se vierem do mais novo para o mais antigo, use ultimas = ultimas[::-1]
+    last_measurements = ultimas[:]  # copia
+
+    for i, offset in enumerate(offsets):
+        # quantos dos últimos "medidos" usar: para a previsão i usamos até (5 - i) medições,
+        # mas não mais do que o que temos.
+        take_count = min(len(last_measurements), max(0, 5 - i))
+        elements = []
+        if take_count > 0:
+            elements.extend(last_measurements[-take_count:])  # últimos take_count valores medidos
+        # adicionar previsões anteriores (na ordem que foram calculadas)
+        elements.extend(prev_preds)
+        R = media(elements)
+
+        # calcular horário alvo (now + offset minutos)
+        future_dt = now + timedelta(minutes=offset)
+        future_time = future_dt.time()
+
+        # pegar ajuste conforme regras e aplicar
+        adj = ajuste_para(future_time)
+        previsao = R + adj
+
+        # se negativo => 0
+        if previsao < 0:
+            previsao = 0
+
+        previsao = round(previsao, 2)
+
+        # label do horário: ex "18:15 (+15m)"
+        label = future_dt.strftime("%H:%M") + f" (+{offset}m)"
+
+        preds.append({"hora": label, "valor": previsao})
+        prev_preds.append(previsao)
+
+    # média base (usada pra exibição)
+    R_base = round(media(last_measurements), 2)
+
+    return jsonify({
+        "media": R_base,
+        "previsoes": preds
+    })
 
 # ================== MAIN ==================
 
