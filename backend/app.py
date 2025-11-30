@@ -280,7 +280,7 @@ def prever_lotacao():
 
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
-    scheduler.add_job(automatic_hourly_count, 'interval', seconds=10)
+    scheduler.add_job(automatic_hourly_count, 'interval', minutes=3)
     scheduler.start()
 
     app.run(debug=True)
