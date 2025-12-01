@@ -1,4 +1,8 @@
-### 🎯 Visão Geral
+# 📊 PEAKTIME — Previsão de Lotação de Academias
+
+![MIT License](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/Status-MVP-blue)
+![Stack](https://img.shields.io/badge/Stack-React%20%7C%20Python-orange)
 
 O PEAKTIME é um **MVP funcional** cujo objetivo é entregar rapidamente valor real para dois públicos:
 
@@ -103,3 +107,8 @@ npm run dev
 
 O frontend rodará em:
 http://localhost:8080/
+
+### 📝 Licença
+
+Este projeto está licenciado sob a **MIT License**.  
+Consulte o arquivo [LICENSE](./LICENSE) para mais detalhes.
