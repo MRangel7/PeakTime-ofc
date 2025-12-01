@@ -1,5 +1,3 @@
----
-
 ### 🎯 Visão Geral
 
 O PEAKTIME é um **MVP funcional** cujo objetivo é entregar rapidamente valor real para dois públicos:
